@@ -8,7 +8,7 @@
 #
 # Usage: scripts/gen-webhook-values.sh [api-resources.txt] > helm/values-capsule-webhooks.yaml
 #   With no file it runs: kubectl api-resources --namespaced=true --verbs=create -o name
-# Needs: jq, mikefarah yq v4
+# Needs: jq
 set -euo pipefail
 
 # Kept out on purpose:
@@ -19,31 +19,82 @@ EXCLUDE='^(bindings|events|leases)$'
 
 if [[ $# -ge 1 ]]; then input=$(cat "$1"); else
   input=$(kubectl api-resources --namespaced=true --verbs=create -o name); fi
+input=$(tr -d '\r' <<<"$input")
 
 # "deployments.apps" -> resource=deployments group=apps ; "pods" -> group=""
-pairs=$(awk -F. '{r=$1; g=substr($0, length($1)+2); print r"\t"g}' <<<"$input" \
-  | awk -F'\t' -v ex="$EXCLUDE" '$1 !~ ex')
+pairs=$(awk -F. -v ex="$EXCLUDE" '$1 !~ ex {g=substr($0, length($1)+2); print $1"\t"g}' <<<"$input")
 
-export API_GROUPS=$(cut -f2 <<<"$pairs" | sort -u | jq -R . | jq -sc .)
-export RESOURCES=$(cut -f1 <<<"$pairs" | sort -u | jq -R . | jq -sc .)
+G=$(cut -f2 <<<"$pairs" | sort -u | jq -R . | jq -sc .)
+R=$(cut -f1 <<<"$pairs" | sort -u | jq -R . | jq -sc .)
 
-yq -n '
-  .x = {"apiGroups": env(API_GROUPS), "apiVersions": ["*"], "resources": env(RESOURCES)} |
-  .cud = ["CREATE","UPDATE","DELETE"] | .cu = ["CREATE","UPDATE"] |
-  .webhooks.hooks.generic.rules = [.x * {"operations": .cu, "scope": "Namespaced"}] |
-  .webhooks.hooks.globalresourcequotas.rules = [
-     .x * {"operations": .cu, "scope": "Namespaced"},
-     {"apiGroups": ["capsule.clastix.io"], "apiVersions": ["v1beta2"], "operations": .cu,
-      "resources": ["globalresourcequotas"], "scope": "Cluster"}] |
-  .webhooks.hooks.cordoning.rules = [.x * {"operations": .cud, "scope": "Namespaced"}] |
-  .webhooks.hooks.managed.rules = [
-     .x * {"operations": .cud, "scope": "Namespaced"},
-     {"apiGroups": [""], "apiVersions": ["v1"], "operations": .cud,
-      "resources": ["namespaces"], "scope": "Cluster"},
-     {"apiGroups": ["capsule.clastix.io"], "apiVersions": ["v1beta2"], "operations": .cud,
-      "resources": ["globalresourcequotas"], "scope": "Cluster"}] |
-  .webhooks.hooks.replications.rules = [.x * {"operations": .cud, "scope": "*"}] |
-  .webhooks.hooks.metadata.rules = [.x * {"operations": .cu, "scope": "Namespaced"}] |
-  .webhooks.hooks.customresources.enabled = false |
-  del(.x, .cud, .cu)
-'
+cat <<YAML
+webhooks:
+  hooks:
+    generic:
+      rules:
+        - apiGroups: &groups $G
+          apiVersions: ["*"]
+          operations: ["CREATE", "UPDATE"]
+          resources: &resources $R
+          scope: Namespaced
+
+    globalresourcequotas:
+      rules:
+        - apiGroups: *groups
+          apiVersions: ["*"]
+          operations: ["CREATE", "UPDATE"]
+          resources: *resources
+          scope: Namespaced
+        - apiGroups: ["capsule.clastix.io"]
+          apiVersions: ["v1beta2"]
+          operations: ["CREATE", "UPDATE"]
+          resources: ["globalresourcequotas"]
+          scope: Cluster
+
+    cordoning:
+      rules:
+        - apiGroups: *groups
+          apiVersions: ["*"]
+          operations: ["CREATE", "UPDATE", "DELETE"]
+          resources: *resources
+          scope: Namespaced
+
+    managed:
+      rules:
+        - apiGroups: *groups
+          apiVersions: ["*"]
+          operations: ["CREATE", "UPDATE", "DELETE"]
+          resources: *resources
+          scope: Namespaced
+        - apiGroups: [""]
+          apiVersions: ["v1"]
+          operations: ["CREATE", "UPDATE", "DELETE"]
+          resources: ["namespaces"]
+          scope: Cluster
+        - apiGroups: ["capsule.clastix.io"]
+          apiVersions: ["v1beta2"]
+          operations: ["CREATE", "UPDATE", "DELETE"]
+          resources: ["globalresourcequotas"]
+          scope: Cluster
+
+    replications:
+      rules:
+        - apiGroups: *groups
+          apiVersions: ["*"]
+          operations: ["CREATE", "UPDATE", "DELETE"]
+          resources: *resources
+          scope: "*"
+
+    metadata:
+      rules:
+        - apiGroups: *groups
+          apiVersions: ["*"]
+          operations: ["CREATE", "UPDATE"]
+          resources: *resources
+          scope: Namespaced
+
+    # Rules are hard-coded as wildcards in the chart, so this can't be narrowed.
+    # Only needed for legacy tenant-annotation custom resource quotas.
+    customresources:
+      enabled: false
+YAML
