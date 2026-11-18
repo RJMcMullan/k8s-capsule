@@ -3,7 +3,15 @@
 # two controllers fight (projectcapsule/capsule#2233) and Capsule logs
 # "context deadline exceeded". Declaring the AKS expressions here makes both agree.
 # Each selector = the 0.15.2 chart default + the two AKS expressions (last).
+#
+# The annotation tells the AKS admissions enforcer to leave Capsule's webhook
+# configurations alone, which also stops the fight on serviceaccount-references
+# (the one webhook the chart gives no namespaceSelector setting). That's safe
+# because every other hook below already excludes AKS's system namespaces, and
+# serviceaccount-references defaults to failurePolicy: Ignore.
 webhooks:
+  annotations:
+    admissions.enforcer/disabled: "true"
   hooks:
     customquotas:
       namespaceSelector:
