@@ -1,0 +1,129 @@
+# AKS's admissions enforcer appends two expressions to every webhook's
+# namespaceSelector. Capsule 0.15.x sees that as drift and reverts it, so the
+# two controllers fight (projectcapsule/capsule#2233) and Capsule logs
+# "context deadline exceeded". Declaring the AKS expressions here makes both agree.
+# Each selector = the 0.15.2 chart default + the two AKS expressions (last).
+webhooks:
+  hooks:
+    customquotas:
+      namespaceSelector:
+        matchExpressions:
+          - { key: control-plane, operator: NotIn, values: ["true"] }
+          - { key: kubernetes.azure.com/managedby, operator: NotIn, values: ["aks"] }
+    globalcustomquotas:
+      namespaceSelector:
+        matchExpressions:
+          - { key: control-plane, operator: NotIn, values: ["true"] }
+          - { key: kubernetes.azure.com/managedby, operator: NotIn, values: ["aks"] }
+    globalresourcequotas:
+      namespaceSelector:
+        matchExpressions:
+          - { key: capsule.clastix.io/tenant, operator: Exists }
+          - { key: control-plane, operator: NotIn, values: ["true"] }
+          - { key: kubernetes.azure.com/managedby, operator: NotIn, values: ["aks"] }
+    rulestatus:
+      namespaceSelector:
+        matchExpressions:
+          - { key: control-plane, operator: NotIn, values: ["true"] }
+          - { key: kubernetes.azure.com/managedby, operator: NotIn, values: ["aks"] }
+    metadata:
+      namespaceSelector:
+        matchExpressions:
+          - { key: capsule.clastix.io/tenant, operator: Exists }
+          - { key: control-plane, operator: NotIn, values: ["true"] }
+          - { key: kubernetes.azure.com/managedby, operator: NotIn, values: ["aks"] }
+    generic:
+      namespaceSelector:
+        matchExpressions:
+          - { key: capsule.clastix.io/tenant, operator: Exists }
+          - { key: control-plane, operator: NotIn, values: ["true"] }
+          - { key: kubernetes.azure.com/managedby, operator: NotIn, values: ["aks"] }
+    resourcepools:
+      namespaceSelector:
+        matchExpressions:
+          - { key: control-plane, operator: NotIn, values: ["true"] }
+          - { key: kubernetes.azure.com/managedby, operator: NotIn, values: ["aks"] }
+    namespaces:
+      namespaceSelector:
+        matchExpressions:
+          - { key: control-plane, operator: NotIn, values: ["true"] }
+          - { key: kubernetes.azure.com/managedby, operator: NotIn, values: ["aks"] }
+    cordoning:
+      namespaceSelector:
+        matchExpressions:
+          - { key: capsule.clastix.io/tenant, operator: Exists }
+          - { key: projectcapsule.dev/cordoned, operator: In, values: ["true"] }
+          - { key: control-plane, operator: NotIn, values: ["true"] }
+          - { key: kubernetes.azure.com/managedby, operator: NotIn, values: ["aks"] }
+    gateways:
+      namespaceSelector:
+        matchExpressions:
+          - { key: capsule.clastix.io/tenant, operator: Exists }
+          - { key: control-plane, operator: NotIn, values: ["true"] }
+          - { key: kubernetes.azure.com/managedby, operator: NotIn, values: ["aks"] }
+    ingresses:
+      namespaceSelector:
+        matchExpressions:
+          - { key: capsule.clastix.io/tenant, operator: Exists }
+          - { key: control-plane, operator: NotIn, values: ["true"] }
+          - { key: kubernetes.azure.com/managedby, operator: NotIn, values: ["aks"] }
+    devices:
+      namespaceSelector:
+        matchExpressions:
+          - { key: capsule.clastix.io/tenant, operator: Exists }
+          - { key: control-plane, operator: NotIn, values: ["true"] }
+          - { key: kubernetes.azure.com/managedby, operator: NotIn, values: ["aks"] }
+    pods:
+      namespaceSelector:
+        matchExpressions:
+          - { key: capsule.clastix.io/tenant, operator: Exists }
+          - { key: control-plane, operator: NotIn, values: ["true"] }
+          - { key: kubernetes.azure.com/managedby, operator: NotIn, values: ["aks"] }
+    persistentvolumeclaims:
+      namespaceSelector:
+        matchExpressions:
+          - { key: capsule.clastix.io/tenant, operator: Exists }
+          - { key: control-plane, operator: NotIn, values: ["true"] }
+          - { key: kubernetes.azure.com/managedby, operator: NotIn, values: ["aks"] }
+    tenants:
+      namespaceSelector:
+        matchExpressions:
+          - { key: control-plane, operator: NotIn, values: ["true"] }
+          - { key: kubernetes.azure.com/managedby, operator: NotIn, values: ["aks"] }
+    owners:
+      namespaceSelector:
+        matchExpressions:
+          - { key: control-plane, operator: NotIn, values: ["true"] }
+          - { key: kubernetes.azure.com/managedby, operator: NotIn, values: ["aks"] }
+    config:
+      namespaceSelector:
+        matchExpressions:
+          - { key: control-plane, operator: NotIn, values: ["true"] }
+          - { key: kubernetes.azure.com/managedby, operator: NotIn, values: ["aks"] }
+    managed:
+      namespaceSelector:
+        matchExpressions:
+          - { key: control-plane, operator: NotIn, values: ["true"] }
+          - { key: kubernetes.azure.com/managedby, operator: NotIn, values: ["aks"] }
+    replicationDefaults:
+      namespaceSelector:
+        matchExpressions:
+          - { key: control-plane, operator: NotIn, values: ["true"] }
+          - { key: kubernetes.azure.com/managedby, operator: NotIn, values: ["aks"] }
+    replications:
+      namespaceSelector:
+        matchExpressions:
+          - { key: control-plane, operator: NotIn, values: ["true"] }
+          - { key: kubernetes.azure.com/managedby, operator: NotIn, values: ["aks"] }
+    services:
+      namespaceSelector:
+        matchExpressions:
+          - { key: capsule.clastix.io/tenant, operator: Exists }
+          - { key: control-plane, operator: NotIn, values: ["true"] }
+          - { key: kubernetes.azure.com/managedby, operator: NotIn, values: ["aks"] }
+    serviceaccounts:
+      namespaceSelector:
+        matchExpressions:
+          - { key: capsule.clastix.io/tenant, operator: Exists }
+          - { key: control-plane, operator: NotIn, values: ["true"] }
+          - { key: kubernetes.azure.com/managedby, operator: NotIn, values: ["aks"] }
