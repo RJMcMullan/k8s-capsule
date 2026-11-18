@@ -3,7 +3,7 @@ webhooks:
     generic:
       rules:
         - apiGroups: &groups [
-            "", "acn.azure.com", "admissionregistration.k8s.io",
+            "acn.azure.com", "admissionregistration.k8s.io",
             "apiextensions.k8s.io", "apiregistration.k8s.io", "apps",
             "argoproj.io", "autoscaling", "azurepolicy.azure.com", "batch",
             "capsule.clastix.io", "certificates.k8s.io", "cilium.io",
@@ -24,6 +24,12 @@ webhooks:
           operations: ["CREATE", "UPDATE"]
           resources: ["*/*"]
           scope: Namespaced
+        # Core API group: AKS rejects "" with wildcard resources, so list them.
+        - apiGroups: [""]
+          apiVersions: ["v1"]
+          operations: ["CREATE", "UPDATE"]
+          resources: &core ["configmaps", "endpoints", "limitranges", "persistentvolumeclaims", "pods", "podtemplates", "replicationcontrollers", "resourcequotas", "secrets", "serviceaccounts", "services"]
+          scope: Namespaced
 
     globalresourcequotas:
       rules:
@@ -31,6 +37,12 @@ webhooks:
           apiVersions: ["*"]
           operations: ["CREATE", "UPDATE"]
           resources: ["*/*"]
+          scope: Namespaced
+        # Core API group: AKS rejects "" with wildcard resources, so list them.
+        - apiGroups: [""]
+          apiVersions: ["v1"]
+          operations: ["CREATE", "UPDATE"]
+          resources: *core
           scope: Namespaced
         - apiGroups: ["capsule.clastix.io"]
           apiVersions: ["v1beta2"]
@@ -45,6 +57,12 @@ webhooks:
           operations: ["CREATE", "UPDATE", "DELETE"]
           resources: ["*"]
           scope: Namespaced
+        # Core API group: AKS rejects "" with wildcard resources, so list them.
+        - apiGroups: [""]
+          apiVersions: ["v1"]
+          operations: ["CREATE", "UPDATE", "DELETE"]
+          resources: *core
+          scope: Namespaced
 
     managed:
       rules:
@@ -52,6 +70,12 @@ webhooks:
           apiVersions: ["*"]
           operations: ["CREATE", "UPDATE", "DELETE"]
           resources: ["*"]
+          scope: Namespaced
+        # Core API group: AKS rejects "" with wildcard resources, so list them.
+        - apiGroups: [""]
+          apiVersions: ["v1"]
+          operations: ["CREATE", "UPDATE", "DELETE"]
+          resources: *core
           scope: Namespaced
         - apiGroups: [""]
           apiVersions: ["v1"]
@@ -71,6 +95,12 @@ webhooks:
           operations: ["CREATE", "UPDATE", "DELETE"]
           resources: ["*"]
           scope: "*"
+        # Core API group: AKS rejects "" with wildcard resources, so list them.
+        - apiGroups: [""]
+          apiVersions: ["v1"]
+          operations: ["CREATE", "UPDATE", "DELETE"]
+          resources: *core
+          scope: Namespaced
 
     metadata:
       rules:
@@ -78,6 +108,12 @@ webhooks:
           apiVersions: ["*"]
           operations: ["CREATE", "UPDATE"]
           resources: ["*"]
+          scope: Namespaced
+        # Core API group: AKS rejects "" with wildcard resources, so list them.
+        - apiGroups: [""]
+          apiVersions: ["v1"]
+          operations: ["CREATE", "UPDATE"]
+          resources: *core
           scope: Namespaced
 
     # Rules are hard-coded as */* in the chart, so this can't be narrowed.
